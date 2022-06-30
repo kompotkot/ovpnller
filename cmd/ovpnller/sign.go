@@ -20,6 +20,7 @@ var (
 )
 
 type Identity struct {
+	name  string
 	ident Config
 
 	sshClient *ssh.Client
@@ -32,6 +33,34 @@ type Identities struct {
 	Actions ActionMaps
 }
 
+func (i *Identity) runAction(actionMap ActionMap) error {
+	switch actionMap.ActionType {
+	case "command":
+		err := i.remoteWorkflowRun(actionMap.Action, i.name)
+		if err != nil {
+			return err
+		}
+	case "download":
+		err := i.downloadFile(actionMap.SourceFilePath, actionMap.DestinationFilePath, i.name)
+		if err != nil {
+			return err
+		}
+	case "copy":
+		err := i.copyFile(actionMap.SourceFilePath, actionMap.DestinationFilePath, i.name)
+		if err != nil {
+			return err
+		}
+	case "upload":
+		err := i.uploadFile(actionMap.SourceFilePath, actionMap.DestinationFilePath, i.name)
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("Unknown action type: %s", actionMap.ActionType)
+	}
+	return nil
+}
+
 // Define an io.Reader to read from Stdin
 type InputReader struct{}
 
@@ -41,6 +70,7 @@ func (irr *InputReader) Read(b []byte) (int, error) {
 	return os.Stdin.Read(b)
 }
 
+// remoteWorkflowRun executes command and provide shell for dynamic prompt
 func (i *Identity) remoteWorkflowRun(cmd, machineType string) error {
 	session, err := i.sshClient.NewSession()
 	if err != nil {
@@ -106,36 +136,6 @@ func (i *Identity) remoteWorkflowRun(cmd, machineType string) error {
 	return nil
 }
 
-func (is *Identities) runAction(activeAction string) error {
-	switch {
-	case "accumulate-certs" == activeAction:
-		for _, actionMap := range is.Actions.AccumulateCerts {
-			err := identities.ca.downloadFile(actionMap.SourceFilePath, actionMap.DestinationFilePath, "ca")
-			if err != nil {
-				return err
-			}
-		}
-	case "ca-build" == activeAction:
-		for _, actionMap := range is.Actions.CaBuild {
-			err := identities.ca.remoteWorkflowRun(actionMap.Action, "ca")
-			if err != nil {
-				return err
-			}
-		}
-	case "server-register" == activeAction:
-		for _, actionMap := range is.Actions.ServerRegister {
-			err := identities.server.remoteWorkflowRun(actionMap.Action, "server")
-			if err != nil {
-				return err
-			}
-		}
-	default:
-		return fmt.Errorf("Unknown action: %s\n", activeAction)
-	}
-
-	return nil
-}
-
 // downloadFile copy file from remote machine to ovpnller
 func (i *Identity) downloadFile(fromFilePath, toFilePath, machineType string) error {
 	// TODO(kompotkot): One sftp client for all session?
@@ -166,15 +166,15 @@ func (i *Identity) downloadFile(fromFilePath, toFilePath, machineType string) er
 	return nil
 }
 
-func (i *Identity) copyToRemote(fromFilePath, toFilePath string) error {
+func (i *Identity) uploadFile(fromFilePath, toFilePath, machineType string) error {
 	// TODO(kompotkot): Continue https://pkg.go.dev/github.com/pkg/sftp#example-package
+	// TODO: Remove sftp, too many dependencies
 	sftpClient, err := sftp.NewClient(i.sshClient)
 	if err != nil {
 		return err
 	}
 	defer sftpClient.Close()
 
-	// leave your mark
 	file, err := sftpClient.Create(toFilePath)
 	if err != nil {
 		return err
@@ -183,6 +183,19 @@ func (i *Identity) copyToRemote(fromFilePath, toFilePath string) error {
 		return err
 	}
 	file.Close()
+
+	// TODO: Fix all logs, hard to find normal language during music listening
+	fmt.Printf("File to %s machine copied at %s\n", machineType, toFilePath)
+
+	return nil
+}
+
+func (i *Identity) copyFile(fromFilePath, toFilePath, machineType string) error {
+	cmd := fmt.Sprintf("cp %s %s", fromFilePath, toFilePath)
+	_, err := i.remoteRun(cmd)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

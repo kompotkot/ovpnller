@@ -20,8 +20,13 @@ func loadConfig() error {
 	if err != nil {
 		return err
 	}
+
 	identities.ca.ident = configs.CA
+	identities.ca.name = "ca"
+
 	identities.server.ident = configs.Server
+	identities.server.name = "server"
+
 	identities.Actions = configs.Actions
 
 	return nil

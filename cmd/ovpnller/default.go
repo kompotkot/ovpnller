@@ -12,7 +12,6 @@ type ActionMap struct {
 	Action     string `json:"action"`
 	ActionType string `json:"action_type"`
 
-	// File paths
 	SourceFilePath      string `json:"source_file_path"`
 	DestinationFilePath string `json:"destination_file_path"`
 }
@@ -21,6 +20,7 @@ type ActionMaps struct {
 	AccumulateCerts []ActionMap `json:"accumulate_certs"`
 	CaBuild         []ActionMap `json:"ca_build"`
 	ClientRegister  []ActionMap `json:"client_register"`
+	ServerBuild     []ActionMap `json:"server_build"`
 	ServerRegister  []ActionMap `json:"server_register"`
 }
 

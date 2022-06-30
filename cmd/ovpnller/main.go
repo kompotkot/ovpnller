@@ -29,12 +29,13 @@ func main() {
 			os.Exit(1)
 		}
 
-		err = identities.runAction("accumulate-certs")
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+		for _, actionMap := range identities.Actions.AccumulateCerts[stateCLI.startFlag:] {
+			err := identities.server.runAction(actionMap)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
 		}
-
 	case "configure":
 		// TODO(kompotkot): Fix, outdated (need changes to work with config directory and new commands)
 		stateCLI.configureCmd.Parse(os.Args[2:])
@@ -61,11 +62,38 @@ func main() {
 			fmt.Printf("Unable initialize connection with CA, err: %v\n", err)
 			os.Exit(1)
 		}
-		err = identities.runAction("ca-build")
+
+		for _, actionMap := range identities.Actions.CaBuild[stateCLI.startFlag:] {
+			err := identities.server.runAction(actionMap)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+		}
+	case "server-build":
+		stateCLI.serverBuildCmd.Parse(os.Args[2:])
+		stateCLI.checkRequirements()
+
+		err := loadConfig()
 		if err != nil {
-			fmt.Println(err)
+			fmt.Printf("Unable to load config, err: %v\n", err)
 			os.Exit(1)
 		}
+
+		err = identities.server.prepareConnection()
+		if err != nil {
+			fmt.Printf("Unable initialize connection with Server, err: %v\n", err)
+			os.Exit(1)
+		}
+
+		for _, actionMap := range identities.Actions.ServerBuild[stateCLI.startFlag:] {
+			err := identities.server.runAction(actionMap)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+		}
+
 	case "server-sign":
 		stateCLI.serverSignCmd.Parse(os.Args[2:])
 		stateCLI.checkRequirements()
@@ -83,10 +111,12 @@ func main() {
 			os.Exit(1)
 		}
 
-		err = identities.runAction("server-sign")
-		if err != nil {
-			fmt.Printf("Action failed, err: %v\n", err)
-			os.Exit(1)
+		for _, actionMap := range identities.Actions.ServerRegister[stateCLI.startFlag:] {
+			err := identities.server.runAction(actionMap)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
 		}
 	case "version":
 		stateCLI.versionCmd.Parse(os.Args[2:])
