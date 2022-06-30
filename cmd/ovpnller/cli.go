@@ -70,15 +70,6 @@ func (s *StateCLI) checkRequirements() {
 		}
 		s.configPathFlag = fmt.Sprintf("%s/%s", homePath, "ovpnller.json")
 	}
-
-	// if _, err := os.Stat(s.caSSHFilePathFlag); err != nil {
-	// 	fmt.Sprintf("Not able to get CA machine ssh file, err: %s", err)
-	// 	os.Exit(0)
-	// }
-	// if _, err := os.Stat(s.serverSSHFilePathFlag); err != nil {
-	// 	fmt.Sprintf("Not able to get Server machine ssh file, err: %s", err)
-	// 	os.Exit(0)
-	// }
 }
 
 func (s *StateCLI) populateCLI() {
@@ -93,17 +84,4 @@ func (s *StateCLI) populateCLI() {
 		fs.StringVar(&s.configPathFlag, "config", "", "Config file path")
 		fs.BoolVar(&s.helpFlag, "help", false, "Show help message")
 	}
-
-	// for _, fs := range []*flag.FlagSet{s.serverSignCmd} {
-	// 	fs.StringVar(&s.caSSHFilePathFlag, "ca-ssh", "", "Path to CA machine ssh file path")
-	// 	fs.StringVar(&s.serverSSHFilePathFlag, "server-ssh", "", "Path to Server machine ssh file path")
-	// }
-
-	// Configure subcommand flag pointers
-	// s.configureCmd.StringVar(&s.addressFlag, "address", "127.0.0.1", "Machine IP address")
-	// s.configureCmd.StringVar(&s.portFlag, "port", "22", "Machine SSH port")
-	// s.configureCmd.StringVar(&s.usernameFlag, "username", "ubuntu", "Machine username identity")
-	// s.configureCmd.StringVar(&s.privateKeyPath, "pk", "", "Machine SSH private key")
-
-	// server-register subcommand flag pointers
 }

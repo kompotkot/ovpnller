@@ -51,18 +51,20 @@ func (i *Identity) remoteWorkflowRun(cmd, machine_type string) error {
 
 	wp, err := session.StdinPipe()
 	if err != nil {
-		return err
+		return fmt.Errorf("Unable to create Stdin Pipe, err: %v", err)
 	}
 	rp, err := session.StdoutPipe()
 	if err != nil {
-		return err
+		return fmt.Errorf("Unable to create Stdout Pipe, err: %v", err)
 	}
 
 	// Handle commands input at remote
 	go func(stdin io.WriteCloser, stdout io.Reader) {
+		// TODO(kompotkot): Re-write it to io.Copy or in some more clear way
 		for {
+			output := make([]byte, 4096)
 			reader := bufio.NewReader(stdout)
-			line, err := reader.ReadString('\n')
+			_, err := reader.Read(output)
 			if err == io.EOF {
 				fmt.Println("Client disconnected")
 				break
@@ -71,14 +73,13 @@ func (i *Identity) remoteWorkflowRun(cmd, machine_type string) error {
 				fmt.Println("Unable to read data", err)
 				break
 			}
-			fmt.Printf("server> %s", line)
+			fmt.Printf("server> %s", string(output))
 
 			// Define writer to remote
 			writer := bufio.NewWriter(stdin)
 
 			var inputReader InputReader
 			// Create buffer to hold input from terminal
-			// TODO(kompotkot): Re-write it to io.Copy or in some more clear way
 			input := make([]byte, 4096)
 			_, err = inputReader.Read(input)
 			if err != nil {
@@ -100,10 +101,8 @@ func (i *Identity) remoteWorkflowRun(cmd, machine_type string) error {
 	session.Stdout = &response
 	err = session.Run(cmd)
 	if err != nil {
-		return err
+		return fmt.Errorf("Command run failed, err: %v", err)
 	}
-	// Last message from remote
-	fmt.Println(response.String())
 
 	return nil
 }
@@ -150,7 +149,6 @@ func loadConfig() error {
 }
 
 func (i *Identity) copyToRemote(fromFilePath, toFilePath string) error {
-
 	// TODO(kompotkot): Continue https://pkg.go.dev/github.com/pkg/sftp#example-package
 	sftpClient, err := sftp.NewClient(i.sshClient)
 	if err != nil {

@@ -41,7 +41,7 @@ func main() {
 		}
 		err = identities.runAction("ca-init")
 		if err != nil {
-			fmt.Printf("Action failed, err: %v\n", err)
+			fmt.Println(err)
 			os.Exit(1)
 		}
 	case "server-sign":
