@@ -13,14 +13,15 @@ type ActionMap struct {
 	ActionType string `json:"action_type"`
 
 	// File paths
-	SourcePath string `json:"source_file_path"`
-	TargetPath string `json:"target_file_path"`
+	SourceFilePath      string `json:"source_file_path"`
+	DestinationFilePath string `json:"destination_file_path"`
 }
 
 type ActionMaps struct {
-	CaInit         []ActionMap `json:"ca_init"`
-	ClientRegister []ActionMap `json:"client_register"`
-	ServerRegister []ActionMap `json:"server_register"`
+	AccumulateCerts []ActionMap `json:"accumulate_certs"`
+	CaBuild         []ActionMap `json:"ca_build"`
+	ClientRegister  []ActionMap `json:"client_register"`
+	ServerRegister  []ActionMap `json:"server_register"`
 }
 
 // Connection configurations to CA, Server
@@ -61,7 +62,7 @@ func genConnectionConfig() (Config, error) {
 func genServerRegisterConfig() []ActionMap {
 	data := []ActionMap{
 		{Action: "ls -la ~/", ActionType: "command"},
-		{Action: "", ActionType: "copyToRemote", SourcePath: "test.txt", TargetPath: "/home/ubuntu/test.txt"},
+		{Action: "", ActionType: "copyToRemote", SourceFilePath: "test.txt", DestinationFilePath: "/home/ubuntu/test.txt"},
 	}
 
 	return data

@@ -13,10 +13,11 @@ var (
 
 // Command Line Interface state
 type StateCLI struct {
-	configureCmd  *flag.FlagSet
-	caInitCmd     *flag.FlagSet
-	serverSignCmd *flag.FlagSet
-	versionCmd    *flag.FlagSet
+	accumulateCertsCmd *flag.FlagSet
+	configureCmd       *flag.FlagSet
+	caBuildCmd         *flag.FlagSet
+	serverSignCmd      *flag.FlagSet
+	versionCmd         *flag.FlagSet
 
 	// Common flags
 	configPathFlag string
@@ -24,7 +25,7 @@ type StateCLI struct {
 }
 
 func (s *StateCLI) usage() {
-	fmt.Printf(`usage: ovpnller [-h] {%[1]s,%[2]s,%[3]s,%[4]s} ...
+	fmt.Printf(`usage: ovpnller [-h] {%[1]s,%[2]s,%[3]s,%[4]s,%[5]s} ...
 
 OpenVPN sign workflow automation CLI
 
@@ -32,21 +33,25 @@ optional arguments:
     -h, --help         show this help message and exit
 
 subcommands:
-    {%[1]s,%[2]s,%[3]s,%[4]s}
-`, s.configureCmd.Name(), s.caInitCmd.Name(), s.serverSignCmd.Name(), s.versionCmd.Name())
+    {%[1]s,%[2]s,%[3]s,%[4]s,%[5]s}
+`, s.accumulateCertsCmd.Name(), s.configureCmd.Name(), s.caBuildCmd.Name(), s.serverSignCmd.Name(), s.versionCmd.Name())
 }
 
 // Check if required flags are set
 func (s *StateCLI) checkRequirements() {
 	if s.helpFlag {
 		switch {
+		case s.accumulateCertsCmd.Parsed():
+			fmt.Printf("Accumulate all required certs for ovpnller in config directory\n\n")
+			s.accumulateCertsCmd.PrintDefaults()
+			os.Exit(0)
 		case s.configureCmd.Parsed():
 			fmt.Printf("Configure commands\n\n")
 			s.configureCmd.PrintDefaults()
 			os.Exit(0)
-		case s.caInitCmd.Parsed():
-			fmt.Printf("Initialize CA machine setup\n\n")
-			s.caInitCmd.PrintDefaults()
+		case s.caBuildCmd.Parsed():
+			fmt.Printf("Build CA machine (runs 'easyrsa build-ca nopass' command)\n\n")
+			s.caBuildCmd.PrintDefaults()
 			os.Exit(0)
 		case s.serverSignCmd.Parsed():
 			fmt.Printf("Sign Server machine commands\n\n")
@@ -68,19 +73,20 @@ func (s *StateCLI) checkRequirements() {
 			fmt.Printf("Unable to parse home directory, err: %v", err)
 			os.Exit(1)
 		}
-		s.configPathFlag = fmt.Sprintf("%s/%s", homePath, "ovpnller.json")
+		s.configPathFlag = fmt.Sprintf("%s/%s/%s", homePath, ".ovpnller", "ovpnller.json")
 	}
 }
 
 func (s *StateCLI) populateCLI() {
 	// Subcommands setup
+	s.accumulateCertsCmd = flag.NewFlagSet("accumulate-certs", flag.ExitOnError)
 	s.configureCmd = flag.NewFlagSet("configure", flag.ExitOnError)
-	s.caInitCmd = flag.NewFlagSet("ca-init", flag.ExitOnError)
+	s.caBuildCmd = flag.NewFlagSet("ca-build", flag.ExitOnError)
 	s.serverSignCmd = flag.NewFlagSet("server-register", flag.ExitOnError)
 	s.versionCmd = flag.NewFlagSet("version", flag.ExitOnError)
 
 	// Common flag pointers
-	for _, fs := range []*flag.FlagSet{s.configureCmd, s.caInitCmd, s.serverSignCmd, s.versionCmd} {
+	for _, fs := range []*flag.FlagSet{s.accumulateCertsCmd, s.configureCmd, s.caBuildCmd, s.serverSignCmd, s.versionCmd} {
 		fs.StringVar(&s.configPathFlag, "config", "", "Config file path")
 		fs.BoolVar(&s.helpFlag, "help", false, "Show help message")
 	}

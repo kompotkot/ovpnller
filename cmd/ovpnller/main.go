@@ -14,7 +14,29 @@ func main() {
 
 	// Parse subcommands and appropriate FlagSet
 	switch os.Args[1] {
+	case "accumulate-certs":
+		stateCLI.accumulateCertsCmd.Parse(os.Args[2:])
+		stateCLI.checkRequirements()
+
+		err := loadConfig()
+		if err != nil {
+			fmt.Printf("Unable to load config, err: %v\n", err)
+			os.Exit(1)
+		}
+		err = identities.ca.prepareConnection()
+		if err != nil {
+			fmt.Printf("Unable initialize connection with CA, err: %v\n", err)
+			os.Exit(1)
+		}
+
+		err = identities.runAction("accumulate-certs")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+
 	case "configure":
+		// TODO(kompotkot): Fix, outdated (need changes to work with config directory and new commands)
 		stateCLI.configureCmd.Parse(os.Args[2:])
 		stateCLI.checkRequirements()
 
@@ -24,8 +46,8 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Printf("Saved config file at: %s\n", stateCLI.configPathFlag)
-	case "ca-init":
-		stateCLI.caInitCmd.Parse(os.Args[2:])
+	case "ca-build":
+		stateCLI.caBuildCmd.Parse(os.Args[2:])
 		stateCLI.checkRequirements()
 
 		err := loadConfig()
@@ -39,7 +61,7 @@ func main() {
 			fmt.Printf("Unable initialize connection with CA, err: %v\n", err)
 			os.Exit(1)
 		}
-		err = identities.runAction("ca-init")
+		err = identities.runAction("ca-build")
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)

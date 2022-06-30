@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -42,7 +41,7 @@ func (irr *InputReader) Read(b []byte) (int, error) {
 	return os.Stdin.Read(b)
 }
 
-func (i *Identity) remoteWorkflowRun(cmd, machine_type string) error {
+func (i *Identity) remoteWorkflowRun(cmd, machineType string) error {
 	session, err := i.sshClient.NewSession()
 	if err != nil {
 		return fmt.Errorf("Unable to create session, err: %v", err)
@@ -73,7 +72,7 @@ func (i *Identity) remoteWorkflowRun(cmd, machine_type string) error {
 				fmt.Println("Unable to read data", err)
 				break
 			}
-			fmt.Printf("server> %s", string(output))
+			fmt.Printf("%s> %s", machineType, string(output))
 
 			// Define writer to remote
 			writer := bufio.NewWriter(stdin)
@@ -109,9 +108,15 @@ func (i *Identity) remoteWorkflowRun(cmd, machine_type string) error {
 
 func (is *Identities) runAction(activeAction string) error {
 	switch {
-	case "ca-init" == activeAction:
-		for _, actionMap := range is.Actions.CaInit {
-			fmt.Println(actionMap.Action)
+	case "accumulate-certs" == activeAction:
+		for _, actionMap := range is.Actions.AccumulateCerts {
+			err := identities.ca.downloadFile(actionMap.SourceFilePath, actionMap.DestinationFilePath, "ca")
+			if err != nil {
+				return err
+			}
+		}
+	case "ca-build" == activeAction:
+		for _, actionMap := range is.Actions.CaBuild {
 			err := identities.ca.remoteWorkflowRun(actionMap.Action, "ca")
 			if err != nil {
 				return err
@@ -131,19 +136,32 @@ func (is *Identities) runAction(activeAction string) error {
 	return nil
 }
 
-func loadConfig() error {
-	rawBytes, err := ioutil.ReadFile(stateCLI.configPathFlag)
+// downloadFile copy file from remote machine to ovpnller
+func (i *Identity) downloadFile(fromFilePath, toFilePath, machineType string) error {
+	// TODO(kompotkot): One sftp client for all session?
+	sc, err := sftp.NewClient(i.sshClient)
 	if err != nil {
 		return err
 	}
-	configs := &Configs{}
-	err = json.Unmarshal(rawBytes, configs)
+	defer sc.Close()
+
+	srcFile, err := sc.OpenFile(fromFilePath, (os.O_RDONLY))
 	if err != nil {
-		return err
+		return fmt.Errorf("Unable to open remote file: %v", err)
 	}
-	identities.ca.ident = configs.CA
-	identities.server.ident = configs.Server
-	identities.Actions = configs.Actions
+	defer srcFile.Close()
+
+	dstFile, err := os.Create(toFilePath)
+	if err != nil {
+		return fmt.Errorf("Unable to open local file: %v", err)
+	}
+	defer dstFile.Close()
+
+	_, err = io.Copy(dstFile, srcFile)
+	if err != nil {
+		return fmt.Errorf("Unable to download remote file: %v", err)
+	}
+	fmt.Printf("File from %s machine copied to %s\n", machineType, toFilePath)
 
 	return nil
 }
