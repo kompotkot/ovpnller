@@ -24,8 +24,8 @@ func main() {
 			os.Exit(1)
 		}
 		fmt.Printf("Saved config file at: %s\n", stateCLI.configPathFlag)
-	case "sign-server":
-		stateCLI.signServerCmd.Parse(os.Args[2:])
+	case "ca-init":
+		stateCLI.caInitCmd.Parse(os.Args[2:])
 		stateCLI.checkRequirements()
 
 		err := loadConfig()
@@ -34,19 +34,38 @@ func main() {
 			os.Exit(1)
 		}
 
-		// identities.ca.prepareConnection()
-		err = identities.server.prepareConnection()
+		err = identities.ca.prepareConnection()
 		if err != nil {
-			fmt.Printf("Unable initialize connection, err: %v\n", err)
+			fmt.Printf("Unable initialize connection with CA, err: %v\n", err)
 			os.Exit(1)
 		}
-
-		err = identities.registerServerAction()
+		err = identities.runAction("ca-init")
 		if err != nil {
 			fmt.Printf("Action failed, err: %v\n", err)
 			os.Exit(1)
 		}
+	case "server-sign":
+		stateCLI.serverSignCmd.Parse(os.Args[2:])
+		stateCLI.checkRequirements()
 
+		err := loadConfig()
+		if err != nil {
+			fmt.Printf("Unable to load config, err: %v\n", err)
+			os.Exit(1)
+		}
+
+		// err = identities.ca.prepareConnection()
+		err = identities.server.prepareConnection()
+		if err != nil {
+			fmt.Printf("Unable initialize connection with Server, err: %v\n", err)
+			os.Exit(1)
+		}
+
+		err = identities.runAction("server-sign")
+		if err != nil {
+			fmt.Printf("Action failed, err: %v\n", err)
+			os.Exit(1)
+		}
 	case "version":
 		stateCLI.versionCmd.Parse(os.Args[2:])
 		stateCLI.checkRequirements()

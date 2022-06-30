@@ -14,7 +14,8 @@ var (
 // Command Line Interface state
 type StateCLI struct {
 	configureCmd  *flag.FlagSet
-	signServerCmd *flag.FlagSet
+	caInitCmd     *flag.FlagSet
+	serverSignCmd *flag.FlagSet
 	versionCmd    *flag.FlagSet
 
 	// Common flags
@@ -23,7 +24,7 @@ type StateCLI struct {
 }
 
 func (s *StateCLI) usage() {
-	fmt.Printf(`usage: ovpnller [-h] {%[1]s,%[2]s,%[3]s} ...
+	fmt.Printf(`usage: ovpnller [-h] {%[1]s,%[2]s,%[3]s,%[4]s} ...
 
 OpenVPN sign workflow automation CLI
 
@@ -31,8 +32,8 @@ optional arguments:
     -h, --help         show this help message and exit
 
 subcommands:
-    {%[1]s,%[2]s,%[3]s}
-`, s.configureCmd.Name(), s.signServerCmd.Name(), s.versionCmd.Name())
+    {%[1]s,%[2]s,%[3]s,%[4]s}
+`, s.configureCmd.Name(), s.caInitCmd.Name(), s.serverSignCmd.Name(), s.versionCmd.Name())
 }
 
 // Check if required flags are set
@@ -43,9 +44,13 @@ func (s *StateCLI) checkRequirements() {
 			fmt.Printf("Configure commands\n\n")
 			s.configureCmd.PrintDefaults()
 			os.Exit(0)
-		case s.signServerCmd.Parsed():
+		case s.caInitCmd.Parsed():
+			fmt.Printf("Initialize CA machine setup\n\n")
+			s.caInitCmd.PrintDefaults()
+			os.Exit(0)
+		case s.serverSignCmd.Parsed():
 			fmt.Printf("Sign Server machine commands\n\n")
-			s.signServerCmd.PrintDefaults()
+			s.serverSignCmd.PrintDefaults()
 			os.Exit(0)
 		case s.versionCmd.Parsed():
 			fmt.Printf("Show version\n\n")
@@ -79,16 +84,17 @@ func (s *StateCLI) checkRequirements() {
 func (s *StateCLI) populateCLI() {
 	// Subcommands setup
 	s.configureCmd = flag.NewFlagSet("configure", flag.ExitOnError)
-	s.signServerCmd = flag.NewFlagSet("sign-server", flag.ExitOnError)
+	s.caInitCmd = flag.NewFlagSet("ca-init", flag.ExitOnError)
+	s.serverSignCmd = flag.NewFlagSet("server-register", flag.ExitOnError)
 	s.versionCmd = flag.NewFlagSet("version", flag.ExitOnError)
 
 	// Common flag pointers
-	for _, fs := range []*flag.FlagSet{s.configureCmd, s.signServerCmd, s.versionCmd} {
+	for _, fs := range []*flag.FlagSet{s.configureCmd, s.caInitCmd, s.serverSignCmd, s.versionCmd} {
 		fs.StringVar(&s.configPathFlag, "config", "", "Config file path")
 		fs.BoolVar(&s.helpFlag, "help", false, "Show help message")
 	}
 
-	// for _, fs := range []*flag.FlagSet{s.signServerCmd} {
+	// for _, fs := range []*flag.FlagSet{s.serverSignCmd} {
 	// 	fs.StringVar(&s.caSSHFilePathFlag, "ca-ssh", "", "Path to CA machine ssh file path")
 	// 	fs.StringVar(&s.serverSSHFilePathFlag, "server-ssh", "", "Path to Server machine ssh file path")
 	// }
@@ -99,5 +105,5 @@ func (s *StateCLI) populateCLI() {
 	// s.configureCmd.StringVar(&s.usernameFlag, "username", "ubuntu", "Machine username identity")
 	// s.configureCmd.StringVar(&s.privateKeyPath, "pk", "", "Machine SSH private key")
 
-	// sign-server subcommand flag pointers
+	// server-register subcommand flag pointers
 }

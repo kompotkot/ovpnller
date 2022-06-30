@@ -60,5 +60,3 @@ dev.env
 prod.env
 test.env
 .secrets/
-
-ovpnller.json

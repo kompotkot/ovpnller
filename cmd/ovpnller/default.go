@@ -18,8 +18,9 @@ type ActionMap struct {
 }
 
 type ActionMaps struct {
-	RegisterServer []ActionMap `json:"register_server"`
-	RegisterClient []ActionMap `json:"register_client"`
+	CaInit         []ActionMap `json:"ca_init"`
+	ClientRegister []ActionMap `json:"client_register"`
+	ServerRegister []ActionMap `json:"server_register"`
 }
 
 // Connection configurations to CA, Server
@@ -57,7 +58,7 @@ func genConnectionConfig() (Config, error) {
 }
 
 // Generate server registration action map
-func genRegisterServerConfig() []ActionMap {
+func genServerRegisterConfig() []ActionMap {
 	data := []ActionMap{
 		{Action: "ls -la ~/", ActionType: "command"},
 		{Action: "", ActionType: "copyToRemote", SourcePath: "test.txt", TargetPath: "/home/ubuntu/test.txt"},
@@ -67,7 +68,7 @@ func genRegisterServerConfig() []ActionMap {
 }
 
 // Generate client registration map
-func genRegisterClientConfig() []ActionMap {
+func genClientRegisterConfig() []ActionMap {
 	data := []ActionMap{}
 
 	return data
@@ -90,8 +91,8 @@ func genConfig() error {
 	if err != nil {
 		return err
 	}
-	regServerConfig := genRegisterServerConfig()
-	regClientConfig := genRegisterClientConfig()
+	regServerConfig := genServerRegisterConfig()
+	regClientConfig := genClientRegisterConfig()
 
 	// Generate full configuration
 	configs := Configs{
@@ -99,8 +100,8 @@ func genConfig() error {
 		Server: conConfig,
 
 		Actions: ActionMaps{
-			RegisterServer: regServerConfig,
-			RegisterClient: regClientConfig,
+			ServerRegister: regServerConfig,
+			ClientRegister: regClientConfig,
 		},
 	}
 
